@@ -16,5 +16,5 @@ app.use("/technologies", technologieRouter);
 const portApplication = process.env.PORT;
 
 app.listen(portApplication, () => {
-  console.info("Aplicação rodando na porta 3000!");
+  console.info(`Aplicação rodando na porta ${portApplication}!`);
 });

@@ -7,18 +7,17 @@ const create = async (req: Request, res: Response) => {
         let technologie = req.body;
         const userName = req.header("username");
 
-        const user = await Users.findOne({ where: { username: userName } });
+        const user = await Users.findFirst({ where: { userName: userName } });
 
-        technologie.UserId = user.id;
+        technologie.UserId = user?.id;
 
-        const technologieSaved = await Technologies.create(technologie);
+        const technologieSaved = await Technologies.create({data: technologie});
 
         const technologieDto = {
             id: technologieSaved.id,
             title: technologieSaved.title,
             studied: technologieSaved.studied,
             deadline: technologieSaved.deadline,
-            created_at: technologieSaved.createdAt
         }
 
         res.status(201).send(technologieDto);
@@ -33,9 +32,9 @@ const findAllTechnologiesByUserName = async (req: Request, res: Response) => {
 
         const userName = req.header("username");
 
-        const user = await Users.findOne({ include: Technologies, where: { username: userName } });
+        const user = await Users.findFirst({ where: { userName: userName }, include: {technologies: true} });
 
-        res.send(user?.Technologies);
+        res.send(user?.technologies);
     } catch (err) {
         console.error(err);
         res.status(500).send({ error: "Erro no servidor" });
@@ -47,7 +46,7 @@ const updateTecnologie = async (req: Request, res: Response) => {
         const technologieId = req.params.id;
         const technologieDto = req.body;
 
-        const technologieToUpdate = await Technologies.findOne({ where: { id: technologieId } });
+        const technologieToUpdate = await Technologies.findFirst({ where: { id: technologieId } });
 
         if (technologieToUpdate == null) {
             res.status(404).send({ error: "Technologie não encontrada" });
@@ -57,11 +56,16 @@ const updateTecnologie = async (req: Request, res: Response) => {
             technologieToUpdate.deadline = technologieDto.deadline;
 
             const updated = await Technologies.update({
-                title: technologieDto.title,
-                deadline: technologieDto.deadline
-            }, { where: { id: technologieId } });
+                data: {
+                    title: technologieToUpdate.title,
+                    deadline: technologieToUpdate.deadline
+                },
+                where: {
+                    id: technologieId
+                }
+            });
 
-            if (updated > 0) {
+            if (updated) {
                 res.status(200).send(technologieToUpdate);
             } else {
                 res.status(501).send("Technologie não atualizada");
@@ -77,16 +81,21 @@ const updateStudiedTechnologie = async (req: Request, res: Response) => {
     try {
         const technologieId = req.params.id;
 
-        const technologie = await Technologies.findOne({ where: { id: technologieId } });
+        const technologie = await Technologies.findFirst({ where: { id: technologieId } });
         if (technologie == null) {
             res.status(404).send({ error: "Technologie não encontrada" });
         } else {
             technologie.studied = true
             const updated = await Technologies.update({
-                studied: true
-            }, { where: { id: technologieId } });
+                data: {
+                    studied: true
+                }, 
+                where: {
+                    id: technologieId
+                }
+            });
 
-            if (updated > 0) {
+            if (updated) {
                 res.status(200).send(technologie);
             } else {
                 res.status(501).send("Technologie não atualizada");
@@ -102,13 +111,13 @@ const remove = async (req: Request, res: Response) => {
     try {
         const technologieId = req.params.id;
 
-        const technologieRemoved = await Technologies.destroy({ where: { id: technologieId } });
+        const technologieRemoved = await Technologies.delete({ where: { id: technologieId } });
 
-        if (technologieRemoved <= 0) {
-            res.status(404).send({ error: "Technologie não encontrada" });
+        if (technologieRemoved) {
+            const user = await Users.findFirst({ where: { userName: req.header("username") }, include: {technologies: true} });
+            res.status(200).send(user?.technologies);
         } else {
-            const user = await Users.findOne({ include: Technologies, where: { username: req.header("username") } });
-            res.status(200).send(user?.Technologies);
+            res.status(404).send({ error: "Technologie não encontrada" });
         }
     } catch (err) {
         console.error(err);

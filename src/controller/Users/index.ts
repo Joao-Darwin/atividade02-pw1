@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import User from '../../model/Users/index';
-import Technologies from '../../model/Technologies/index';
 
 const create = async (req: Request, res: Response) => {
     try {
@@ -9,11 +8,17 @@ const create = async (req: Request, res: Response) => {
         if (await userExists(user.username)) {
             res.status(401).send("UserName já está sendo usado");
         } else {
-            const userCreated = await User.create(user);
+            const userCreated = await User.create({data: {
+                name: user.name,
+                userName: user.username,
+                technologies: {
+                    
+                }
+            }});
             const userCreatedDto = {
                 id: userCreated.id,
                 name: userCreated.name,
-                username: userCreated.username,
+                username: userCreated.userName,
                 technologies: []
             }
 
@@ -27,7 +32,7 @@ const create = async (req: Request, res: Response) => {
 
 const userExists = async (userName: string) => {
     try {
-        const user = await User.findOne({ where: { username: userName } });
+        const user = await User.findFirst({ where: { userName: userName } });
 
         return !!user;
     } catch (err) {
@@ -37,7 +42,8 @@ const userExists = async (userName: string) => {
 
 const findAll = async (req: Request, res: Response) => {
     try {
-        const allUsers = await User.findAll({ include: Technologies });
+        const allUsers = await User.findMany();
+        
         res.send(allUsers);
     } catch (err) {
         res.status(500).send({ error: "Erro no servidor" });
