@@ -13,7 +13,7 @@ app.use("/users", userRouter);
 app.use("/technologies", checkExistsUserAccount);
 app.use("/technologies", technologieRouter);
 
-const portApplication = process.env.PORT;
+const portApplication = process.env.PORT || 3000;
 
 app.listen(portApplication, () => {
   console.info(`Aplicação rodando na porta ${portApplication}!`);
